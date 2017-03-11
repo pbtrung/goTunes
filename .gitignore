@@ -1,2 +1,5 @@
 data/*.json
+misc/*.json
+misc/*.txt
+misc/*.db
 .env

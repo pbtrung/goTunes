@@ -185,6 +185,7 @@ func callbackHandler(w http.ResponseWriter, r *http.Request) {
 
 	gob.Register(map[string]interface{}{})
 	session.Values["id_token"] = token.Extra("id_token")
+	fmt.Println(token.Extra("id_token"))
 	session.Values["access_token"] = token.AccessToken
 	session.Values["profile"] = profile
 	err = session.Save(r, w)
