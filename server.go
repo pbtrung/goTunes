@@ -11,17 +11,21 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"google.golang.org/api/drive/v2"
 
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
 
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/credentials"
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/sts"
 	"github.com/gorilla/mux"
 	"github.com/gorilla/securecookie"
 	"github.com/gorilla/sessions"
 	"github.com/joho/godotenv"
-	"golang.org/x/net/context"
 )
 
 var store = sessions.NewCookieStore(securecookie.GenerateRandomKey(32))
@@ -33,9 +37,10 @@ func main() {
 	r.HandleFunc("/", home)
 	r.HandleFunc("/js", getJS)
 	r.HandleFunc("/css", getCSS)
+	r.HandleFunc("/awsToken", getAWSToken)
+	r.HandleFunc("/gdrToken", getGDRToken)
 	r.HandleFunc("/album-art-empty", getEmptyAlbumArt)
 	r.HandleFunc("/callback", callbackHandler)
-	r.HandleFunc("/itemURL", getItemURL)
 
 	var port string
 
@@ -73,6 +78,61 @@ func home(w http.ResponseWriter, r *http.Request) {
 		}
 	} else {
 		serveFile("./public/goTunes.html", w)
+	}
+}
+
+func getGDRToken(w http.ResponseWriter, r *http.Request) {
+
+	session, err := store.Get(r, "auth0-session")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	} else if session.Values["profile"] == nil {
+		w.Header().Set("Content-Type", "text/plain")
+		w.Write([]byte("Restricted contents!"))
+		return
+	} else {
+		accessToken := getGDRAccessToken()
+		type Token struct {
+			AccessToken string
+			Expiration  time.Time
+		}
+		token := &Token{AccessToken: accessToken.AccessToken, Expiration: accessToken.Expiry}
+		b, err := json.Marshal(token)
+		if err != nil {
+			log.Fatalln(err)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		fmt.Fprintf(w, "%s", string(b))
+	}
+}
+
+func getAWSToken(w http.ResponseWriter, r *http.Request) {
+
+	session, err := store.Get(r, "auth0-session")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	} else if session.Values["profile"] == nil {
+		w.Header().Set("Content-Type", "text/plain")
+		w.Write([]byte("Restricted contents!"))
+		return
+	} else {
+		sessionToken := getAWSSessionToken()
+		type Token struct {
+			AccessKeyID     string
+			SecretAccessKey string
+			SessionToken    string
+			Expiration      *time.Time
+		}
+		token := &Token{AccessKeyID: *sessionToken.Credentials.AccessKeyId, SecretAccessKey: *sessionToken.Credentials.SecretAccessKey,
+			SessionToken: *sessionToken.Credentials.SessionToken, Expiration: sessionToken.Credentials.Expiration}
+		b, err := json.Marshal(token)
+		if err != nil {
+			log.Fatalln(err)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		fmt.Fprintf(w, "%s", string(b))
 	}
 }
 
@@ -185,7 +245,6 @@ func callbackHandler(w http.ResponseWriter, r *http.Request) {
 
 	gob.Register(map[string]interface{}{})
 	session.Values["id_token"] = token.Extra("id_token")
-	fmt.Println(token.Extra("id_token"))
 	session.Values["access_token"] = token.AccessToken
 	session.Values["profile"] = profile
 	err = session.Save(r, w)
@@ -195,81 +254,6 @@ func callbackHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	http.Redirect(w, r, "/", http.StatusSeeOther)
-}
-
-func getItemURL(w http.ResponseWriter, r *http.Request) {
-
-	session, err := store.Get(r, "auth0-session")
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	} else if session.Values["profile"] == nil {
-		serveFile("./public/login.html", w)
-	} else {
-		var secrets = "./data/tokens.json"
-
-		if _, err := os.Stat(secrets); os.IsNotExist(err) {
-			w.Header().Set("Content-Type", "text/plain")
-			w.Write([]byte("Need Goole tokens!"))
-			return
-		}
-		queryValues := r.URL.Query()
-		if queryValues.Get("id") == "" {
-			w.Header().Set("Content-Type", "text/plain")
-			w.Write([]byte("Need item ID!"))
-			return
-		}
-		var fileID = queryValues.Get("id")
-
-		file, err := os.Open(secrets)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		tok := new(oauth2.Token)
-		err = json.NewDecoder(file).Decode(tok)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		defer file.Close()
-
-		ctx := context.Background()
-
-		config, err := getConfig()
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		tokenSource := config.TokenSource(oauth2.NoContext, tok)
-		newTok, err := tokenSource.Token()
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		if newTok.AccessToken != tok.AccessToken {
-			saveToken(secrets, newTok)
-			fmt.Println("Save new token: ", newTok.AccessToken)
-		}
-
-		client := config.Client(ctx, tok)
-		srv, err := drive.New(client)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		driveFile, err := srv.Files.Get(fileID).Do()
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		var itemURL = driveFile.DownloadUrl + "&access_token=" + newTok.AccessToken
-		w.Header().Set("Content-Type", "text/plain")
-		w.WriteHeader(200)
-		fmt.Fprintf(w, "%s", itemURL)
-	}
 }
 
 func getConfig() (*oauth2.Config, error) {
@@ -290,4 +274,61 @@ func saveToken(path string, tok *oauth2.Token) {
 	}
 	defer file.Close()
 	json.NewEncoder(file).Encode(tok)
+}
+
+func getAWSSessionToken() *sts.GetSessionTokenOutput {
+	// read-only access
+	sess, err := session.NewSession(&aws.Config{
+		Region:      aws.String("us-west-2"),
+		Credentials: credentials.NewSharedCredentials("./.aws", "readDB"),
+	})
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	svc := sts.New(sess)
+	params := &sts.GetSessionTokenInput{
+		DurationSeconds: aws.Int64(int64(108000)),
+	}
+	sessionToken, err := svc.GetSessionToken(params)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	return sessionToken
+}
+
+func getGDRAccessToken() *oauth2.Token {
+	var secrets = "./data/tokens.json"
+
+	if _, err := os.Stat(secrets); os.IsNotExist(err) {
+		log.Fatalln(err)
+	}
+	file, err := os.Open(secrets)
+	if err != nil {
+		log.Fatalln(err)
+	}
+	tok := new(oauth2.Token)
+	err = json.NewDecoder(file).Decode(tok)
+	if err != nil {
+		log.Fatalln(err)
+	}
+	defer file.Close()
+
+	config, err := getConfig()
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	tokenSource := config.TokenSource(oauth2.NoContext, tok)
+	newTok, err := tokenSource.Token()
+	if err != nil {
+		log.Fatalln(err)
+	}
+	if newTok.AccessToken != tok.AccessToken {
+		saveToken(secrets, newTok)
+		fmt.Println("Save new token: ", newTok.AccessToken)
+	}
+
+	return newTok
 }

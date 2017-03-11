@@ -14,7 +14,7 @@ var timeFormat = function(secs) {
 
 $(function() {
 
-    // Model.
+    // Model
     var Item = Backbone.Model.extend({
     });
     var Items = Backbone.Collection.extend({
@@ -26,142 +26,97 @@ $(function() {
             "search/:query": "itemQuery"
         },
         itemQuery: function(query) {
-            var queryUrl = "/search?q=" + encodeURIComponent($("#query").val());
-            console.log(queryUrl);
-            $.ajax({
-                type: "GET",
-                url: queryUrl,
-                dataType: "json",
-                success: function(data) {
-                    for (var i = 0; i < data.length; i++) {
-                        data[i]["length"] = timeFormat(data[i]["length"]);
-                        data[i]["bitrate"] = Math.round(data[i]["bitrate"] / 1000);
-                    }   
-                    var models = _.map(data, function(d) {
-                        return new Item(d);
+            if(localStorage.getItem("awsToken") === null) {
+                $.ajax({
+                    type: "GET",
+                    url: "/awsToken",
+                    dataType: "json",
+                    success: function(token) {
+                        localStorage.setItem("awsToken", JSON.stringify(awsToken));
+                        search(awsToken, query);
+                    }
+                });
+            } else {
+                var awsToken = JSON.parse(localStorage.getItem("awsToken"));
+                var now = new Date();
+                var tokenDate = new Date(token.Expiration);
+                if(now >= tokenDate) {
+                    $.ajax({
+                        type: "GET",
+                        url: "/awsToken",
+                        dataType: "json",
+                        success: function(awsToken) {
+                            localStorage.setItem("awsToken", JSON.stringify(awsToken));
+                        }
                     });
-                    var results = new Items(models);
-                    app.showResults(results);
+                } else {
+
                 }
-            });
+            }
         }
     });
     var router = new Router();
-    Backbone.history.start();
+    Backbone.history.start();   
 
     var AppView = Backbone.View.extend({
         el: $("body"),
         events: {
             "submit #queryForm": "routeResults",
-            "click #pause": "pauseTrack",
-            "click #play": "playTrack"
-        },
-
-        pauseTrack: function(ev) {
-            ev.preventDefault();
-            $("#player").get(0).pause();
-        },
-
-        playTrack: function(ev) {
-            ev.preventDefault();
-            var playLnk = $(ev.currentTarget);
-            var itemId = playLnk.data("path");
-            var player = document.getElementById("player");
-            var queryUrl = "/itemURL?id=" + encodeURIComponent(itemId);
-
-            $.ajax({
-                type: "GET",
-                url: queryUrl,
-                dataType: "text",
-                async: true,
-                success: function(itemUrl) {
-                    if (player.src !== itemUrl) {
-                        $("#player").attr("src", itemUrl);
-                        $("#player").get(0).play();
-                    } else {
-                        $("#player").get(0).play();
-                    }
-                }
-            });
         },
 
         routeResults: function(ev) {
             ev.preventDefault();
-            router.navigate("search/" + encodeURIComponent($("#query").val()), {trigger: true});
-        },
-        showResults: function(results) {
-            var source = $("#template").html();
-            var template = Handlebars.compile(source);
-            var html;
-            $("#results").empty();
-            var albums = [];
-            results.each(function(result) {
-                html = template(result.toJSON());
-                $("#results").append(html);
-                var imgId = result.toJSON()["fileid"];
-
-                var album = {album_id: result.toJSON()["album_id"], artpath: ""};
-                
-                if (imgId !== "") {
-                    var queryUrl = "/itemURL?id=" + encodeURIComponent(result.toJSON()["artpath"]);
-                    var img = $("#album-art-" + imgId);
-
-                    $.ajax({
-                        type: "GET",
-                        url: queryUrl,
-                        dataType: "text",
-                        async: true,
-                        success: function(imgUrl) {
-                            var flag = 0;
-                            for (var i = 0; i < albums.length; i++) {
-                                if (albums[i]["album_id"] == album["album_id"]) {
-                                    img.attr("src", albums[i]["artpath"]);  
-                                    flag = 1;
-                                    break;
-                                }
-                            }
-                            if (flag == 0) {
-                                album["artpath"] = imgUrl;
-                                albums.push(album);
-                                img.attr("src", imgUrl);
-                            }
-                        }
-                    });
-                }
-            });
-            showHideDl();
-            showHideLyrics();
+            router.navigate("search/" + encodeURIComponent($("#query").val()), { trigger: true });
         }
     });
 
     var app = new AppView();
 });
 
-function showHideDl() {
-    $(".media #info").click(function(ev) {
-        ev.preventDefault();
-        var elId = "#" + $(this).data("path");
-        var media = $(elId);
-        var dl = media.find("dl");
-        if(dl.hasClass("hidden")) {
-            $(".media dl").addClass("hidden");
-            dl.removeClass("hidden");
+function search(awsToken, query) {
+    AWS.config.credentials = new AWS.Credentials(awsToken.AccessKeyID, awsToken.SecretAccessKey, awsToken.SessionToken);
+    AWS.config.update({ region: "us-west-2" });
+    var dynamodb = new AWS.DynamoDB();
+}
+
+function getItemURL(fileID, callback) {
+    if(localStorage.getItem("gdrToken") === null) {
+        getItemURLFromGDR(fileID, callback);
+    } else {
+        var gdrToken = JSON.parse(localStorage.getItem("gdrToken"));
+        var now = new Date();
+        var tokenDate = new Date(gdrToken.Expiration);
+        if(now > tokenDate) {
+            getItemURLFromGDR(fileID, callback);
         } else {
-            $(".media dl").addClass("hidden");
+            getItemURLFromGDRWithToken(fileID, gdrToken, callback); 
+        }
+    }
+}
+
+function getItemURLFromGDR(fileID, callback) {
+    $.ajax({
+        type: "GET",
+        url: "/gdrToken",
+        dataType: "json",
+        success: function(gdrToken) {
+            localStorage.setItem("gdrToken", JSON.stringify(gdrToken));
+            getItemURLFromGDRWithToken(fileID, gdrToken, callback);
         }
     });
 }
 
-function showHideLyrics() {
-    $(".media #lyricsLnk").click(function(ev) {
-        ev.preventDefault();
-        var elId = "#lyrics-" + $(this).data("path");
-        var lyrics = $(elId);
-        if(lyrics.hasClass("hidden")) {
-            $("#results .lyrics").addClass("hidden");
-            lyrics.removeClass("hidden");
-        } else {
-            $("#results .lyrics").addClass("hidden");
+function getItemURLFromGDRWithToken(fileID, gdrToken, callback) {
+    $.ajax({
+        type: "GET",
+        url: "https://www.googleapis.com/drive/v2/files/" + fileID,
+        headers: {
+            Authorization: "Bearer " + gdrToken.AccessToken
+        },
+        dataType: "json",
+        success: function(item) {
+            var itemURL = item.downloadUrl + "&access_token=" + encodeURIComponent(gdrToken.AccessToken);
+            callback(itemURL);
         }
     });
 }

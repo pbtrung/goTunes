@@ -36,7 +36,7 @@ def addTable(db, md5List, gdList):
     conn.close()
 
 
-def updatedb(db, md5List, gdList):     
+def updatedb(db, md5List, gdList):
 
     addTable(db, md5List, gdList)
 
@@ -89,7 +89,7 @@ def updatedb(db, md5List, gdList):
 
     conn.close()
 
-    
+
 if __name__ == '__main__':
     db = sys.argv[1]
     md5List = sys.argv[2]

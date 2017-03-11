@@ -11,11 +11,11 @@ from apiclient import errors
 
 
 try:
-	from googleapiclient.errors import HttpError
-	from apiclient import discovery
-	import oauth2client
-	from oauth2client import client
-	from oauth2client import tools
+    from googleapiclient.errors import HttpError
+    from apiclient import discovery
+    import oauth2client
+    from oauth2client import client
+    from oauth2client import tools
 except ImportError:
     print('goole-api-python-client is not installed. Try:')
     print('sudo pip install --upgrade google-api-python-client')
@@ -69,9 +69,11 @@ def list_files(parent):
     page_token = None
     while True:
         try:
-            results = service.files().list(q= "'%s' in parents and trashed=false" % parent,
-                                           fields='nextPageToken, files(mimeType, id, md5Checksum)',
-                                           pageToken=page_token).execute()
+            results = service.files().list(
+                q="'%s' in parents and trashed=false" %
+                parent,
+                fields='nextPageToken, files(mimeType, id, md5Checksum)',
+                pageToken=page_token).execute()
             items = results.get('files', [])
 
             for i in items:
@@ -85,16 +87,16 @@ def list_files(parent):
 
         except(errors.HttpError, e):
             try:
-              # Load Json body.
-              error = simplejson.loads(e.content)
-              print('Error code: %d' % error.get('code'))
-              print('Error message: %s' % error.get('message'))
-              # More error information can be retrieved with error.get('errors').
+                # Load Json body.
+                error = simplejson.loads(e.content)
+                print('Error code: %d' % error.get('code'))
+                print('Error message: %s' % error.get('message'))
+                # More error information can be retrieved with
+                # error.get('errors').
             except ValueError:
-              # Could not load Json body.
-              print('HTTP Status code: %d' % e.resp.status)
-              print('HTTP Reason: %s' % e.resp.reason)
-
+                # Could not load Json body.
+                print('HTTP Status code: %d' % e.resp.status)
+                print('HTTP Reason: %s' % e.resp.reason)
 
 
 if __name__ == '__main__':

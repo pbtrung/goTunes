@@ -9,6 +9,7 @@
     <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.8.3/underscore-min.js"></script>
     <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/backbone.js/1.3.3/backbone-min.js"></script>
     <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/handlebars.js/4.0.6/handlebars.min.js"></script>
+    <script src="https://sdk.amazonaws.com/js/aws-sdk-2.7.20.min.js"></script>
     <link href="/css" rel="stylesheet" />
     <script type="text/javascript" src="/js"></script>
     <title>goTunes</title>
@@ -17,11 +18,11 @@
 <body>
     <div class="container" align="center">
         <audio controls id="player"></audio>
-        <form id="queryForm">
-            <input id="query" type="search" placeholder="Search" class="form-control search">
-        </form>
         <div id="content">
-            <div id="results" align="left"></div>
+            <form id="queryForm">
+                <input id="query" type="search" placeholder="Search" class="form-control search">
+            </form>
+            <ul id="results" class="list list-group"></ul>
             <div class="text-center">
                 <ul class="pagination pagination-sm"></ul>
             </div>
@@ -29,79 +30,88 @@
     </div>
 
     <script id="template" type="text/x-handlebars-template">
-        <div class="media" id="{{this.fileid}}">
-            <div class="media-body">
-                <h4 id="item-title" class="media-heading">{{this.title}}</h4>
-                <p id="item-details">{{this.albumartist}} -- {{this.album}}</p>
-                <p id="player-controls">
-                    <span class="badge"><a href="#" id="play" data-path="{{this.fileid}}">Play</a></span>
-                    <span class="badge"><a href="#" id="pause">Pause</a></span>
-                    <span class="badge"><a href="#" id="info" data-path="{{this.fileid}}">Info</a></span>
-                    {{#if this.lyrics}}
-                        <span class="badge"><a href="#" id="lyricsLnk" data-path="{{this.fileid}}">Lyrics</a></span>                        
-                    {{/if}}
-                    <dl class="dl-horizontal hidden">
-                        <table>
-                            <tbody>
-                                {{#if this.track}}
-                                    {{#if this.tracktotal}}
-                                        <tr>
-                                            <td><b>Track</b></td>
-                                            <td class="tb-value">{{this.track}}/{{this.tracktotal}}</td>
-                                        </tr>
+        <li class="list-group-item">
+            <p id="item-title">{{this.title}}</p>
+            <p id="item-details">{{this.albumartist}} -- {{this.album}}</p>
+            <p id="player-controls">
+                <span class="badge"><a href="#" id="play" data-path="{{this.fileid}}">Play</a></span>
+                <span class="badge"><a href="#" id="pause">Pause</a></span>
+                <span class="badge"><a href="#" id="info" data-path="{{this.fileid}}">Info</a></span>
+                {{#if this.lyrics}}
+                    <span class="badge"><a href="#" id="lyricsLnk" data-path="{{this.fileid}}">Lyrics</a></span>                        
+                {{/if}}
+                <dl class="dl-horizontal hidden">
+                    <table>
+                        <tbody>
+                            <tr>
+                                <td></td>
+                                <td></td>
+                                <td rowspan="6">
+                                    {{#if this.artpath}}
+                                        <img id="album-art-{{this.fileid}}" class="album-art" src="">
                                     {{else}}
-                                        <tr>
-                                            <td><b>Track</b></td>
-                                            <td class="tb-value">{{this.track}}</td>
-                                        </tr>
+                                        <img id="album-art" class="media-object" src="/album-art-empty">
                                     {{/if}}
-                                {{/if}}
-                                <tr>
-                                    <td><b>Format</b></td>
-                                    <td class="tb-value">{{this.format}}</td>
-                                </tr>
-                                <tr>
-                                    <td><b>Length</b></td>
-                                    <td class="tb-value">{{this.length}}</td>
-                                </tr>
-                                <tr>
-                                    <td><b>Bitrate</b></td>
-                                    <td class="tb-value">{{this.bitrate}} kbps</td>
-                                </tr>
-                                <tr>
-                                    <td><b>File</b></td>
-                                    <td class="tb-value">
-                                        <a href="/downloadItem?id={{this.fileid}}" data-path="{{this.fileid}}">download</a>
-                                        <a id="hiddenDownload" class="hidden"></a>
-                                    </td>
-                                </tr>
-                                {{#if this.mb_trackid}}
+                                </td>
+                            </tr>
+                            {{#if this.track}}
+                                {{#if this.tracktotal}}
                                     <tr>
-                                        <td><b>MusicBrainz</b></td>
-                                        <td class="tb-value">
-                                            <a target="_blank" href="https://musicbrainz.org/recording/{{this.mb_trackid}}">view</a>
-                                        </td>
+                                        <td><b>Track</b></td>
+                                        <td class="tb-value">{{this.track}}/{{this.tracktotal}}</td>
+                                    </tr>
+                                {{else}}
+                                    <tr>
+                                        <td><b>Track</b></td>
+                                        <td class="tb-value">{{this.track}}</td>
                                     </tr>
                                 {{/if}}
-                            </tbody>
-                        </table>
-                    </dl>
-                </p>
-            </div>
-            {{#if this.artpath}}
-                <div class="media-right">
-                    <img id="album-art-{{this.fileid}}" class="media-object album-art" src="">
-                </div>        
-            {{else}}
-                <div class="media-right">
-                    <img id="album-art" class="media-object" src="/album-art-empty">
-                </div>                  
+                            {{else}}
+                                <tr>
+                                    <td><b>Track</b></td>
+                                    <td class="tb-value">Unknown</td>
+                                </tr>
+                            {{/if}}
+                            <tr>
+                                <td><b>Format</b></td>
+                                <td class="tb-value">{{this.format}}</td>
+                            </tr>
+                            <tr>
+                                <td><b>Length</b></td>
+                                <td class="tb-value">{{this.length}}</td>
+                            </tr>
+                            <tr>
+                                <td><b>Bitrate</b></td>
+                                <td class="tb-value">{{this.bitrate}} kbps</td>
+                            </tr>
+                            <tr>
+                                <td><b>File</b></td>
+                                <td class="tb-value">
+                                    <a href="/downloadItem?id={{this.fileid}}" data-path="{{this.fileid}}">download</a>
+                                    <a id="hiddenDownload" class="hidden"></a>
+                                </td>
+                            </tr>
+                            {{#if this.mb_trackid}}
+                                <tr>
+                                    <td><b>MusicBrainz</b></td>
+                                    <td class="tb-value">
+                                        <a target="_blank" href="https://musicbrainz.org/recording/{{this.mb_trackid}}">view</a>
+                                    </td>
+                                </tr>
+                            {{else}}
+                                <tr>
+                                    <td><b>MusicBrainz</b></td>
+                                    <td class="tb-value">Unknown</td>
+                                </tr>
+                            {{/if}}
+                        </tbody>
+                    </table>
+                </dl>
+            </p>
+            {{#if this.lyrics}}
+                <p id="lyrics-{{this.fileid}}" class="lyrics hidden">{{this.lyrics}}</p>                                 
             {{/if}}
-        </div>
-        {{#if this.lyrics}}
-            <p id="lyrics-{{this.fileid}}" class="lyrics hidden">{{this.lyrics}}</p>                                 
-        {{/if}}
-        <hr>
+        </li>
     </script>
 
 </body>
