@@ -3,3 +3,4 @@ misc/*.json
 misc/*.txt
 misc/*.db
 .env
+.aws
