@@ -26,33 +26,17 @@ $(function() {
             "search/:query": "itemQuery"
         },
         itemQuery: function(query) {
-            if(localStorage.getItem("awsToken") === null) {
-                $.ajax({
-                    type: "GET",
-                    url: "/awsToken",
-                    dataType: "json",
-                    success: function(token) {
-                        localStorage.setItem("awsToken", JSON.stringify(awsToken));
-                        search(awsToken, query);
-                    }
+            getItemQueryResults(query, function(results) {
+                for (var i = 0; i < results.length; i++) {
+                    results[i]["length"] = timeFormat(results[i]["length"]);
+                    results[i]["bitrate"] = Math.round(results[i]["bitrate"] / 1000);
+                }   
+                var models = _.map(results, function(d) {
+                    return new Item(d);
                 });
-            } else {
-                var awsToken = JSON.parse(localStorage.getItem("awsToken"));
-                var now = new Date();
-                var tokenDate = new Date(token.Expiration);
-                if(now >= tokenDate) {
-                    $.ajax({
-                        type: "GET",
-                        url: "/awsToken",
-                        dataType: "json",
-                        success: function(awsToken) {
-                            localStorage.setItem("awsToken", JSON.stringify(awsToken));
-                        }
-                    });
-                } else {
-
-                }
-            }
+                var rlts = new Items(models);
+                app.showResults(rlts);
+            });
         }
     });
     var router = new Router();
@@ -67,15 +51,52 @@ $(function() {
         routeResults: function(ev) {
             ev.preventDefault();
             router.navigate("search/" + encodeURIComponent($("#query").val()), { trigger: true });
+        },
+        showResults: function(results) {
+            var source = $("#template").html();
+            var template = Handlebars.compile(source);
+            var html;
+            $("#results").empty();
+            results.each(function(result) {
+                html = template(result.toJSON());
+                $("#results").append(html);
+            });
         }
     });
 
     var app = new AppView();
 });
 
-function search(awsToken, query) {
+function getItemQueryResults(query, callback) {
+    if(localStorage.getItem("awsToken") === null) {
+        getTokenSearch(query, callback);
+    } else {
+        var awsToken = JSON.parse(localStorage.getItem("awsToken"));
+        var now = new Date();
+        var tokenDate = new Date(token.Expiration);
+        if(now >= tokenDate) {
+            getTokenSearch(query, callback);
+        } else {
+            search(awsToken, query, callback);
+        }
+    }
+}
+
+function getTokenSearch(query, callback) {
+    $.ajax({
+        type: "GET",
+        url: "/awsToken",
+        dataType: "json",
+        success: function(token) {
+            localStorage.setItem("awsToken", JSON.stringify(awsToken));
+            search(awsToken, query, callback);
+        }
+    });
+}
+
+function search(awsToken, query, callback) {
     AWS.config.credentials = new AWS.Credentials(awsToken.AccessKeyID, awsToken.SecretAccessKey, awsToken.SessionToken);
-    AWS.config.update({ region: "us-west-2" });
+    AWS.config.update({ region: awsToken.Region });
     var dynamodb = new AWS.DynamoDB();
 }
 

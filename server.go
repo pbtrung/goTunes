@@ -124,9 +124,10 @@ func getAWSToken(w http.ResponseWriter, r *http.Request) {
 			SecretAccessKey string
 			SessionToken    string
 			Expiration      *time.Time
+			Region          string
 		}
 		token := &Token{AccessKeyID: *sessionToken.Credentials.AccessKeyId, SecretAccessKey: *sessionToken.Credentials.SecretAccessKey,
-			SessionToken: *sessionToken.Credentials.SessionToken, Expiration: sessionToken.Credentials.Expiration}
+			SessionToken: *sessionToken.Credentials.SessionToken, Expiration: sessionToken.Credentials.Expiration, Region: os.Getenv("DYNAMODB_REGION")}
 		b, err := json.Marshal(token)
 		if err != nil {
 			log.Fatalln(err)
