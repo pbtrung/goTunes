@@ -1,0 +1,95 @@
+.container {
+    padding: 5px;
+    max-width: 800px;
+}
+
+#content {
+    padding-top: 15px;
+}
+
+p {
+    margin: 0;
+}
+
+#queryForm {
+    padding-top: 2px;
+}
+
+#album-art, .album-art {
+    width: 55px;
+}
+
+#item-title {
+    font-size: 14px;
+    margin-bottom: 0;
+}
+
+#item-details {
+    font-size: 12px;
+    margin-bottom: 0;
+}
+
+.badge a {
+    color: white;
+}
+
+.media {
+    margin-top: 10px;
+}
+
+#player-controls, dl {
+    margin-bottom: 0;
+}
+
+hr {
+    margin-bottom: 15px;
+    margin-top: 15px;
+}
+
+.hidden {
+    display: none;
+}
+
+.lyrics {
+    white-space: pre-wrap;
+    margin-top: 5px;
+}
+
+.dl-horizontal dt {
+    text-align: left;
+    width: auto;
+    padding-right: 1em;
+}
+
+.dl-horizontal dd {
+    margin-left: 0;
+}
+
+.tb-value {
+    padding-left: 10px;
+}
+
+table {
+    margin-top: 5px;
+}
+
+@media screen and (min-width: 300px) and (max-width: 400px) {
+    #player, #query, #content {
+        width: 95vw;
+    }
+}
+@media screen and (min-width: 350px) and (max-width: 500px) {
+    #player, #query, #content {
+        width: 95vw;
+    }
+}
+@media screen and (min-width: 500px) and (max-width: 800px) {
+    #player, #query, #content {
+        width: 95vw;
+    }
+}
+@media screen and (min-width: 800px) {
+    #player, #query, #content {
+        width: 700px;
+    }
+}
