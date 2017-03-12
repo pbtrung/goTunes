@@ -27,10 +27,6 @@ $(function() {
         },
         itemQuery: function(query) {
             getItemQueryResults(query, function(results) {
-                for (var i = 0; i < results.length; i++) {
-                    results[i]["length"] = timeFormat(results[i]["length"]);
-                    results[i]["bitrate"] = Math.round(results[i]["bitrate"] / 1000);
-                }   
                 var models = _.map(results, function(d) {
                     return new Item(d);
                 });
@@ -45,7 +41,7 @@ $(function() {
     var AppView = Backbone.View.extend({
         el: $("body"),
         events: {
-            "submit #queryForm": "routeResults",
+            "submit #queryForm": "routeResults"
         },
 
         routeResults: function(ev) {
@@ -74,7 +70,7 @@ function getItemQueryResults(query, callback) {
         var awsToken = JSON.parse(localStorage.getItem("awsToken"));
         var now = new Date();
         var tokenDate = new Date(token.Expiration);
-        if(now >= tokenDate) {
+        if(now > tokenDate) {
             getTokenSearch(query, callback);
         } else {
             search(awsToken, query, callback);
@@ -98,6 +94,42 @@ function search(awsToken, query, callback) {
     AWS.config.credentials = new AWS.Credentials(awsToken.AccessKeyID, awsToken.SecretAccessKey, awsToken.SessionToken);
     AWS.config.update({ region: awsToken.Region });
     var dynamodb = new AWS.DynamoDB();
+
+    var params = {
+        ExpressionAttributeValues: {
+            ":q": { S: query }
+        }, 
+        KeyConditionExpression: "title CONTAINS :q", 
+        ProjectionExpression: "id, album, albumartist, title, track, tracktotal, format, length, bitrate, mb_trackid, lyrics, fileid, albumartid", 
+        Limit: 6,
+        ConsistentRead: false,
+        TableName: "music"
+    };
+    dynamodb.query(params, function(err, data) {
+        if(err) {
+            console.log(err, err.stack);
+        } else {
+            var items = [];
+            for(var i in data.Items) {
+                var item = {};
+                item.id = i.id.N;
+                item.album = i.album.S;
+                item.albumartist = i.albumartist.S;
+                item.title = i.title.S;
+                item.track = i.track.N;
+                item.tracktotal = i.tracktotal.N;
+                item.format = i.format.S;
+                item.length = timeFormat(i.length.N);
+                item.bitrate = Math.round(i.bitrate.N / 1000);
+                item.mb_trackid = i.mb_trackid.S;
+                item.lyrics = i.lyrics.S;
+                item.fileid = i.fileid.S;
+                item.albumartid = i.albumartid.S;
+                items.push(item);
+            }
+            callback(items);
+        }          
+    });
 }
 
 function getItemURL(fileID, callback) {
