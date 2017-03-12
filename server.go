@@ -1,6 +1,7 @@
 package main
 
 import (
+	"database/sql"
 	"encoding/gob"
 	"encoding/json"
 	"fmt"
@@ -18,27 +19,30 @@ import (
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/credentials"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/sts"
 	"github.com/gorilla/mux"
 	"github.com/gorilla/securecookie"
 	"github.com/gorilla/sessions"
 	"github.com/joho/godotenv"
+	_ "github.com/mattn/go-sqlite3"
 )
 
 var store = sessions.NewCookieStore(securecookie.GenerateRandomKey(32))
+var db *sql.DB
 
 func main() {
+
+	db, err = sql.Open("sqlite3", "./data/lib.db")
+	if err != nil {
+		log.Fatalln(err)
+	}
 
 	r := mux.NewRouter()
 
 	r.HandleFunc("/", home)
 	r.HandleFunc("/js", getJS)
 	r.HandleFunc("/css", getCSS)
-	r.HandleFunc("/awsToken", getAWSToken)
 	r.HandleFunc("/gdrToken", getGDRToken)
+	r.HandleFunc("/search", search)
 	r.HandleFunc("/album-art-empty", getEmptyAlbumArt)
 	r.HandleFunc("/callback", callbackHandler)
 
@@ -50,6 +54,20 @@ func main() {
 		port = os.Getenv("PORT")
 	}
 	log.Fatalln(http.ListenAndServe(":"+port, r))
+}
+
+func search(w http.ResponseWriter, r *http.Request) {
+	session, err := store.Get(r, "auth0-session")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	} else if session.Values["profile"] == nil {
+		w.Header().Set("Content-Type", "text/plain")
+		w.Write([]byte("Restricted contents!"))
+		return
+	} else {
+
+	}
 }
 
 func home(w http.ResponseWriter, r *http.Request) {
@@ -97,36 +115,6 @@ func getGDRToken(w http.ResponseWriter, r *http.Request) {
 			Expiration  time.Time
 		}
 		token := &Token{AccessToken: accessToken.AccessToken, Expiration: accessToken.Expiry}
-		b, err := json.Marshal(token)
-		if err != nil {
-			log.Fatalln(err)
-		}
-		w.Header().Set("Content-Type", "application/json")
-		fmt.Fprintf(w, "%s", string(b))
-	}
-}
-
-func getAWSToken(w http.ResponseWriter, r *http.Request) {
-
-	session, err := store.Get(r, "auth0-session")
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	} else if session.Values["profile"] == nil {
-		w.Header().Set("Content-Type", "text/plain")
-		w.Write([]byte("Restricted contents!"))
-		return
-	} else {
-		sessionToken := getAWSSessionToken()
-		type Token struct {
-			AccessKeyID     string
-			SecretAccessKey string
-			SessionToken    string
-			Expiration      *time.Time
-			Region          string
-		}
-		token := &Token{AccessKeyID: *sessionToken.Credentials.AccessKeyId, SecretAccessKey: *sessionToken.Credentials.SecretAccessKey,
-			SessionToken: *sessionToken.Credentials.SessionToken, Expiration: sessionToken.Credentials.Expiration, Region: os.Getenv("DYNAMODB_REGION")}
 		b, err := json.Marshal(token)
 		if err != nil {
 			log.Fatalln(err)
@@ -274,28 +262,6 @@ func saveToken(path string, tok *oauth2.Token) {
 	}
 	defer file.Close()
 	json.NewEncoder(file).Encode(tok)
-}
-
-func getAWSSessionToken() *sts.GetSessionTokenOutput {
-	// read-only access
-	sess, err := session.NewSession(&aws.Config{
-		Region:      aws.String("us-west-2"),
-		Credentials: credentials.NewSharedCredentials("./.aws", "readDB"),
-	})
-	if err != nil {
-		log.Fatalln(err)
-	}
-
-	svc := sts.New(sess)
-	params := &sts.GetSessionTokenInput{
-		DurationSeconds: aws.Int64(int64(108000)),
-	}
-	sessionToken, err := svc.GetSessionToken(params)
-	if err != nil {
-		log.Fatalln(err)
-	}
-
-	return sessionToken
 }
 
 func getGDRAccessToken() *oauth2.Token {
