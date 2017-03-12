@@ -26,6 +26,24 @@ $(function() {
             "search/:query": "itemQuery"
         },
         itemQuery: function(query) {
+            var queryUrl = "/search?q=" + encodeURIComponent($("#query").val());
+            console.log(queryUrl);
+            $.ajax({
+                type: "GET",
+                url: queryUrl,
+                dataType: "json",
+                success: function(data) {
+                    for (var i = 0; i < data.length; i++) {
+                        data[i]["length"] = timeFormat(data[i]["length"]);
+                        data[i]["bitrate"] = Math.round(data[i]["bitrate"] / 1000);
+                    }   
+                    var models = _.map(data, function(d) {
+                        return new Item(d);
+                    });
+                    var results = new Items(models);
+                    app.showResults(results);
+                }
+            });
         }
     });
     var router = new Router();
@@ -50,6 +68,12 @@ $(function() {
                 html = template(result.toJSON());
                 $("#results").append(html);
             });
+            var options = {
+                valueNames: ["searchSrc1", "searchSrc2"],
+                page: 5,
+                pagination: true
+            };
+            var resultList = new List("content", options);
         }
     });
 

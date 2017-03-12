@@ -19,6 +19,7 @@ import (
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
 
+	"github.com/elgs/gosqljson"
 	"github.com/gorilla/mux"
 	"github.com/gorilla/securecookie"
 	"github.com/gorilla/sessions"
@@ -31,6 +32,7 @@ var db *sql.DB
 
 func main() {
 
+	var err error
 	db, err = sql.Open("sqlite3", "./data/lib.db")
 	if err != nil {
 		log.Fatalln(err)
@@ -66,7 +68,21 @@ func search(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("Restricted contents!"))
 		return
 	} else {
+		queryValues := r.URL.Query()
+		if queryValues.Get("q") == "" {
+			w.Header().Set("Content-Type", "text/plain")
+			w.Write([]byte("Need search terms!"))
+			return
+		}
+		searchTerm := queryValues.Get("q")
+		stmt := "SELECT * FROM item_search WHERE item_search MATCH ? LIMIT 100"
 
+		data, err := gosqljson.QueryDbToMapJSON(db, "lower", stmt, searchTerm)
+		if err != nil {
+			log.Fatalln(err)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.Write([]byte(data))
 	}
 }
 

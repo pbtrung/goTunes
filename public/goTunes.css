@@ -3,20 +3,12 @@
     max-width: 800px;
 }
 
-#content {
-    padding-top: 15px;
-}
-
 p {
     margin: 0;
 }
 
 #queryForm {
     padding-top: 2px;
-}
-
-#album-art, .album-art {
-    width: 55px;
 }
 
 #item-title {
@@ -29,21 +21,22 @@ p {
     margin-bottom: 0;
 }
 
+.list-group {
+    padding-top: 7px;
+    margin-bottom: 10px;
+}
+
+.pagination {
+    margin: 0;
+    padding: 0;
+}
+
 .badge a {
     color: white;
 }
 
-.media {
-    margin-top: 10px;
-}
-
-#player-controls, dl {
+#controls, dl {
     margin-bottom: 0;
-}
-
-hr {
-    margin-bottom: 15px;
-    margin-top: 15px;
 }
 
 .hidden {
@@ -53,16 +46,6 @@ hr {
 .lyrics {
     white-space: pre-wrap;
     margin-top: 5px;
-}
-
-.dl-horizontal dt {
-    text-align: left;
-    width: auto;
-    padding-right: 1em;
-}
-
-.dl-horizontal dd {
-    margin-left: 0;
 }
 
 .tb-value {
