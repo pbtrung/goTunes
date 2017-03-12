@@ -31,7 +31,8 @@ $(function() {
                     return new Item(d);
                 });
                 var rlts = new Items(models);
-                app.showResults(rlts);
+                //app.showResults(rlts);
+                console.log(results);
             });
         }
     });
@@ -69,7 +70,7 @@ function getItemQueryResults(query, callback) {
     } else {
         var awsToken = JSON.parse(localStorage.getItem("awsToken"));
         var now = new Date();
-        var tokenDate = new Date(token.Expiration);
+        var tokenDate = new Date(awsToken.Expiration);
         if(now > tokenDate) {
             getTokenSearch(query, callback);
         } else {
@@ -83,7 +84,7 @@ function getTokenSearch(query, callback) {
         type: "GET",
         url: "/awsToken",
         dataType: "json",
-        success: function(token) {
+        success: function(awsToken) {
             localStorage.setItem("awsToken", JSON.stringify(awsToken));
             search(awsToken, query, callback);
         }
@@ -99,8 +100,9 @@ function search(awsToken, query, callback) {
         ExpressionAttributeValues: {
             ":q": { S: query }
         }, 
-        KeyConditionExpression: "title CONTAINS :q", 
-        ProjectionExpression: "id, album, albumartist, title, track, tracktotal, format, length, bitrate, mb_trackid, lyrics, fileid, albumartid", 
+        KeyConditionExpression: "title = :q", 
+        //ProjectionExpression: "id, album, albumartist, title, track, tracktotal, format, length, bitrate, mb_trackid, lyrics, fileid, albumartid", 
+        ProjectionExpression: "id, title, album", 
         Limit: 6,
         ConsistentRead: false,
         TableName: "music"
@@ -110,21 +112,21 @@ function search(awsToken, query, callback) {
             console.log(err, err.stack);
         } else {
             var items = [];
-            for(var i in data.Items) {
+            for(var i = 0; i < data.Items.length; i++) {
                 var item = {};
-                item.id = i.id.N;
-                item.album = i.album.S;
-                item.albumartist = i.albumartist.S;
-                item.title = i.title.S;
-                item.track = i.track.N;
-                item.tracktotal = i.tracktotal.N;
-                item.format = i.format.S;
-                item.length = timeFormat(i.length.N);
-                item.bitrate = Math.round(i.bitrate.N / 1000);
-                item.mb_trackid = i.mb_trackid.S;
-                item.lyrics = i.lyrics.S;
-                item.fileid = i.fileid.S;
-                item.albumartid = i.albumartid.S;
+                item.id = data.Items[i]["id"]["N"];
+                item.album = data.Items[i]["album"]["S"];
+                //item.albumartist = i.albumartist.S;
+                item.title = data.Items[i]["title"]["S"];
+                //item.track = i.track.N;
+                //item.tracktotal = i.tracktotal.N;
+                //item.format = i.format.S;
+                //item.length = timeFormat(i.length.N);
+                //item.bitrate = Math.round(i.bitrate.N / 1000);
+                //item.mb_trackid = i.mb_trackid.S;
+                //item.lyrics = i.lyrics.S;
+                //item.fileid = i.fileid.S;
+                //item.albumartid = i.albumartid.S;
                 items.push(item);
             }
             callback(items);
