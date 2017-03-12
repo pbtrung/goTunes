@@ -111,7 +111,7 @@ $(function() {
             };
             var resultList = new List("content", options);
 
-            showHideiInfo();
+            showHideInfo();
             showHideLyrics();
         }
     });
@@ -119,7 +119,7 @@ $(function() {
     var app = new AppView();
 });
 
-function showHideiInfo() {
+function showHideInfo() {
     $("#controls #info").click(function(ev) {
         ev.preventDefault();
         var fileID = $(this).data("fileid");
