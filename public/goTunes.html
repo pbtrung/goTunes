@@ -34,25 +34,25 @@
             <p id="item-title" class="searchSrc1">{{this.title}}</p>
             <p id="item-details" class="searchSrc2">{{this.albumartist}} -- {{this.album}}</p>
             <p id="controls">
-                <span class="badge"><a href="#" id="play" data-path="{{this.fileid}}">Play</a></span>
+                <span class="badge"><a href="#" id="play" data-fileid="{{this.fileid}}">Play</a></span>
                 <span class="badge"><a href="#" id="pause">Pause</a></span>
-                <span class="badge"><a href="#" id="info" data-path="{{this.fileid}}">Info</a></span>
+                <span class="badge"><a href="#" id="info" data-fileid="{{this.fileid}}">Info</a></span>
                 {{#if this.lyrics}}
-                    <span class="badge"><a href="#" id="lyricsLnk" data-path="{{this.fileid}}">Lyrics</a></span>                        
+                    <span class="badge"><a href="#" id="lyrics" data-fileid="{{this.fileid}}">Lyrics</a></span>                        
                 {{/if}}
-                <dl class="dl-horizontal hidden">
+                <dl class="dl-horizontal hidden" id="dl-{{this.fileid}}">
                     <table>
                         <tbody>
                             <tr>
-                                <td></td>
-                                <td></td>
-                                <td rowspan="6">
-                                    {{#if this.artpath}}
-                                        <img id="album-art-{{this.fileid}}" class="album-art" src="">
+                                <th rowspan="7" class="tb-album-art">
+                                    {{#if this.albumart_id}}
+                                        <img id="album-art-{{this.fileid}}" class="album-art" src="" data-albumartid="{{this.albumart_id}}">
                                     {{else}}
-                                        <img id="album-art" class="media-object" src="/album-art-empty">
+                                        <img class="album-art" src="/album-art-empty">
                                     {{/if}}
-                                </td>
+                                </th>   
+                                <th></th>
+                                <th></th>
                             </tr>
                             {{#if this.track}}
                                 {{#if this.tracktotal}}
@@ -87,7 +87,7 @@
                             <tr>
                                 <td><b>File</b></td>
                                 <td class="tb-value">
-                                    <a href="/downloadItem?id={{this.fileid}}" data-path="{{this.fileid}}">download</a>
+                                    <a href="/downloadItem?id={{this.fileid}}" data-fileid="{{this.fileid}}" id="download">download</a>
                                     <a id="hiddenDownload" class="hidden"></a>
                                 </td>
                             </tr>

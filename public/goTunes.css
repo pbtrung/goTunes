@@ -11,6 +11,17 @@ p {
     padding-top: 2px;
 }
 
+.album-art {
+    width: 100px;
+    max-height: 115px;
+    margin-top: 3px;
+}
+
+.tb-album-art {
+    vertical-align: top;
+    padding-right: 10px;
+}
+
 #item-title {
     font-size: 14px;
     margin-bottom: 0;
@@ -37,6 +48,10 @@ p {
 
 #controls, dl {
     margin-bottom: 0;
+}
+
+dl {
+    margin-top: 5px;
 }
 
 .hidden {

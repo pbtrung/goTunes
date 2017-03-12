@@ -52,7 +52,43 @@ $(function() {
     var AppView = Backbone.View.extend({
         el: $("body"),
         events: {
-            "submit #queryForm": "routeResults"
+            "submit #queryForm": "routeResults",
+            "click #pause": "pauseTrack",
+            "click #download": "downloadTrack",
+            "click #play": "playTrack"
+        },
+
+        pauseTrack: function(ev) {
+            ev.preventDefault();
+            $("#player").get(0).pause();
+        },
+
+        downloadTrack: function(ev) {
+            ev.preventDefault();
+            var download = $(ev.currentTarget);
+            var hiddenDownload = download.parent().find("#hiddenDownload");
+            var fileID = download.data("fileid");
+
+            getItemURL(fileID, function(itemURL) {
+                hiddenDownload.attr("href", itemURL);
+                hiddenDownload.attr("download", itemURL);
+                hiddenDownload.get(0).click();
+            });
+        },
+
+        playTrack: function(ev) {
+            ev.preventDefault();
+            var play = $(ev.currentTarget);
+            var fileID = play.data("fileid");
+            getItemURL(fileID, function(itemURL) {
+                var player = document.getElementById("player");
+                if (player.src !== itemURL) {
+                    player.attr("src", itemURL);
+                    player.get(0).play();
+                } else {
+                    player.get(0).play();
+                }
+            });
         },
 
         routeResults: function(ev) {
@@ -74,11 +110,48 @@ $(function() {
                 pagination: true
             };
             var resultList = new List("content", options);
+
+            showHideiInfo();
+            showHideLyrics();
         }
     });
 
     var app = new AppView();
 });
+
+function showHideiInfo() {
+    $("#controls #info").click(function(ev) {
+        ev.preventDefault();
+        var fileID = $(this).data("fileid");
+        var dl = $("#dl-" + fileID);
+        if(dl.hasClass("hidden")) {
+            $("#controls .dl-horizontal").addClass("hidden");
+            dl.removeClass("hidden");
+            if($("#album-art-" + fileID).length) {
+                var albumart = $("#album-art-" + fileID);
+                getItemURL(albumart.data("albumartid"), function(itemURL) {
+                    albumart.attr("src", itemURL);
+                });
+            }
+        } else {
+            dl.addClass("hidden");
+        }
+    });
+}
+
+function showHideLyrics() {
+    $("#controls #lyrics").click(function(ev) {
+        ev.preventDefault();
+        var elId = "#lyrics-" + $(this).data("fileid");
+        var lyrics = $(elId);
+        if(lyrics.hasClass("hidden")) {
+            $("#results .lyrics").addClass("hidden");
+            lyrics.removeClass("hidden");
+        } else {
+            $("#results .lyrics").addClass("hidden");
+        }
+    });
+}
 
 function getItemURL(fileID, callback) {
     if(localStorage.getItem("gdrToken") === null) {

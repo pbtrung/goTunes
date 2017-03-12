@@ -75,7 +75,7 @@ func search(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		searchTerm := queryValues.Get("q")
-		stmt := "SELECT * FROM item_search WHERE item_search MATCH ? LIMIT 100"
+		stmt := "SELECT * FROM item_search WHERE item_search MATCH ? LIMIT 50"
 
 		data, err := gosqljson.QueryDbToMapJSON(db, "lower", stmt, searchTerm)
 		if err != nil {
