@@ -21,15 +21,15 @@ def addTable(db, md5List, gdList):
 
     conn.commit()
 
-    stmt = "CREATE TABLE gdr (fileId TEXT, md5 TEXT)"
+    stmt = "CREATE TABLE gdr (fileid TEXT, md5 TEXT)"
     c.execute(stmt)
     with open(gdList) as gdFile:
         for gdLine in gdFile:
-            gdFileId = gdLine.split(' ')[0].strip()
+            gdfileid = gdLine.split(' ')[0].strip()
             gdFileMD5 = gdLine.split(' ')[1].strip()
 
-            t = (gdFileId, gdFileMD5)
-            stmt = "INSERT INTO gdr (fileId, md5) VALUES (?, ?)"
+            t = (gdfileid, gdFileMD5)
+            stmt = "INSERT INTO gdr (fileid, md5) VALUES (?, ?)"
             c.execute(stmt, t)
 
     conn.commit()
@@ -44,13 +44,13 @@ def updatedb(db, md5List, gdList):
     c = conn.cursor()
 
     print("Add COLUMN to items")
-    stmt = "ALTER TABLE items ADD COLUMN artpath BLOB"
+    stmt = "ALTER TABLE items ADD COLUMN albumart_id TEXT"
     c.execute(stmt)
     conn.commit()
     stmt = "ALTER TABLE items ADD COLUMN md5 TEXT"
     c.execute(stmt)
     conn.commit()
-    stmt = "ALTER TABLE items ADD COLUMN fileId TEXT"
+    stmt = "ALTER TABLE items ADD COLUMN fileid TEXT"
     c.execute(stmt)
     conn.commit()
 
@@ -58,7 +58,7 @@ def updatedb(db, md5List, gdList):
     stmt = "ALTER TABLE albums ADD COLUMN md5 TEXT"
     c.execute(stmt)
     conn.commit()
-    stmt = "ALTER TABLE albums ADD COLUMN fileId TEXT"
+    stmt = "ALTER TABLE albums ADD COLUMN fileid TEXT"
     c.execute(stmt)
     conn.commit()
 
@@ -67,8 +67,8 @@ def updatedb(db, md5List, gdList):
     c.execute(stmt)
     conn.commit()
 
-    print("Add fileId to albums")
-    stmt = "UPDATE albums SET fileId = (SELECT fileId FROM gdr WHERE md5 = albums.md5)"
+    print("Add fileid to albums")
+    stmt = "UPDATE albums SET fileid = (SELECT fileid FROM gdr WHERE md5 = albums.md5)"
     c.execute(stmt)
     conn.commit()
 
@@ -77,13 +77,13 @@ def updatedb(db, md5List, gdList):
     c.execute(stmt)
     conn.commit()
 
-    print("Add fileId to items")
-    stmt = "UPDATE items SET fileId = (SELECT fileId FROM gdr WHERE md5 = items.md5)"
+    print("Add fileid to items")
+    stmt = "UPDATE items SET fileid = (SELECT fileid FROM gdr WHERE md5 = items.md5)"
     c.execute(stmt)
     conn.commit()
 
-    print("Add artpath to items")
-    stmt = "UPDATE items SET artpath = (SELECT fileId FROM albums WHERE id = items.album_id)"
+    print("Add albumart_id to items")
+    stmt = "UPDATE items SET albumart_id = (SELECT fileid FROM albums WHERE id = items.album_id)"
     c.execute(stmt)
     conn.commit()
 

@@ -83,10 +83,10 @@ $(function() {
             getItemURL(fileID, function(itemURL) {
                 var player = document.getElementById("player");
                 if (player.src !== itemURL) {
-                    player.attr("src", itemURL);
-                    player.get(0).play();
+                    $("#player").attr("src", itemURL);
+                    $("#player").get(0).play();
                 } else {
-                    player.get(0).play();
+                    $("#player").get(0).play();
                 }
             });
         },
@@ -104,12 +104,6 @@ $(function() {
                 html = template(result.toJSON());
                 $("#results").append(html);
             });
-            var options = {
-                valueNames: ["searchSrc1", "searchSrc2"],
-                page: 5,
-                pagination: true
-            };
-            var resultList = new List("content", options);
 
             showHideInfo();
             showHideLyrics();
@@ -125,7 +119,7 @@ function showHideInfo() {
         var fileID = $(this).data("fileid");
         var dl = $("#dl-" + fileID);
         if(dl.hasClass("hidden")) {
-            $("#controls .dl-horizontal").addClass("hidden");
+            $("#results .dl-horizontal").addClass("hidden");
             dl.removeClass("hidden");
             if($("#album-art-" + fileID).length) {
                 var albumart = $("#album-art-" + fileID);

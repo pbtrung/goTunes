@@ -1,2 +1,2 @@
-CREATE VIRTUAL TABLE item_search USING fts5(id, album, albumartist, title, path, track, tracktotal, format, length, bitrate, mb_trackid, lyrics);
-insert into item_search select id, album, albumartist, title, path, track, tracktotal, format, length, bitrate, mb_trackid, lyrics from items;
+CREATE VIRTUAL TABLE item_search USING fts5(id, album, albumartist, title, track, tracktotal, format, length, bitrate, mb_trackid, lyrics, fileid, albumart_id);
+insert into item_search select id, album, albumartist, title, track, tracktotal, format, length, bitrate, mb_trackid, lyrics, fileid, albumart_id from items;
