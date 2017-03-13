@@ -27,7 +27,6 @@ $(function() {
         },
         itemQuery: function(query) {
             var queryUrl = "/search?q=" + encodeURIComponent($("#query").val());
-            console.log(queryUrl);
             $.ajax({
                 type: "GET",
                 url: queryUrl,
@@ -41,7 +40,7 @@ $(function() {
                         return new Item(d);
                     });
                     var results = new Items(models);
-                    app.showResults(results);
+                    app.showResults(results, query);
                 }
             });
         }
@@ -95,7 +94,7 @@ $(function() {
             ev.preventDefault();
             router.navigate("search/" + encodeURIComponent($("#query").val()), { trigger: true });
         },
-        showResults: function(results) {
+        showResults: function(results, query) {
             var source = $("#template").html();
             var template = Handlebars.compile(source);
             var html;
@@ -107,6 +106,13 @@ $(function() {
 
             showHideInfo();
             showHideLyrics();
+            
+            var options = {
+                valueNames: ["searchSrc1", "searchSrc2"],
+                page: 5,
+                pagination: true
+            };
+            var resultList = new List("content", options);
         }
     });
 
@@ -126,7 +132,6 @@ function showHideInfo() {
                 var albumart = $("#album-art-" + fileID);
                 getItemURL(albumart.data("albumartid"), function(itemURL) {
                     albumart.attr("src", itemURL);
-                    albumart.removeClass("hidden");
                 });
             }
         } else {
