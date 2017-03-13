@@ -120,15 +120,17 @@ function showHideInfo() {
         var dl = $("#dl-" + fileID);
         if(dl.hasClass("hidden")) {
             $("#results .dl-horizontal").addClass("hidden");
+            $("#results .lyrics").addClass("hidden");
             dl.removeClass("hidden");
             if($("#album-art-" + fileID).length) {
                 var albumart = $("#album-art-" + fileID);
                 getItemURL(albumart.data("albumartid"), function(itemURL) {
                     albumart.attr("src", itemURL);
+                    albumart.removeClass("hidden");
                 });
             }
         } else {
-            dl.addClass("hidden");
+            $("#results .dl-horizontal").addClass("hidden");
         }
     });
 }
@@ -140,6 +142,7 @@ function showHideLyrics() {
         var lyrics = $(elId);
         if(lyrics.hasClass("hidden")) {
             $("#results .lyrics").addClass("hidden");
+            $("#results .dl-horizontal").addClass("hidden");
             lyrics.removeClass("hidden");
         } else {
             $("#results .lyrics").addClass("hidden");

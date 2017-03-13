@@ -19,7 +19,9 @@ import (
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
 
+	"github.com/codegangsta/negroni"
 	"github.com/elgs/gosqljson"
+	"github.com/gorilla/context"
 	"github.com/gorilla/mux"
 	"github.com/gorilla/securecookie"
 	"github.com/gorilla/sessions"
@@ -31,7 +33,6 @@ var store = sessions.NewCookieStore(securecookie.GenerateRandomKey(32))
 var db *sql.DB
 
 func main() {
-
 	var err error
 	db, err = sql.Open("sqlite3", "./data/lib.db")
 	if err != nil {
@@ -41,49 +42,68 @@ func main() {
 	r := mux.NewRouter()
 
 	r.HandleFunc("/", home)
-	r.HandleFunc("/js", getJS)
-	r.HandleFunc("/css", getCSS)
-	r.HandleFunc("/gdrToken", getGDRToken)
-	r.HandleFunc("/search", search)
-	r.HandleFunc("/album-art-empty", getEmptyAlbumArt)
 	r.HandleFunc("/callback", callbackHandler)
 
-	var port string
+	r.Handle("/js", negroni.New(
+		negroni.HandlerFunc(isAuthenticated),
+		negroni.Wrap(http.HandlerFunc(getJS)),
+	))
+	r.Handle("/css", negroni.New(
+		negroni.HandlerFunc(isAuthenticated),
+		negroni.Wrap(http.HandlerFunc(getCSS)),
+	))
+	r.Handle("/gdrToken", negroni.New(
+		negroni.HandlerFunc(isAuthenticated),
+		negroni.Wrap(http.HandlerFunc(getGDRToken)),
+	))
+	r.Handle("/search", negroni.New(
+		negroni.HandlerFunc(isAuthenticated),
+		negroni.Wrap(http.HandlerFunc(search)),
+	))
+	r.Handle("/album-art-empty", negroni.New(
+		negroni.HandlerFunc(isAuthenticated),
+		negroni.Wrap(http.HandlerFunc(getEmptyAlbumArt)),
+	))
 
+	var port string
 	if os.Getenv("PORT") == "" {
 		port = "3000"
 	} else {
 		port = os.Getenv("PORT")
 	}
-	log.Fatalln(http.ListenAndServe(":"+port, r))
+	log.Fatalln(http.ListenAndServe(":"+port, context.ClearHandler(r)))
 }
 
-func search(w http.ResponseWriter, r *http.Request) {
+func isAuthenticated(w http.ResponseWriter, r *http.Request, next http.HandlerFunc) {
 	session, err := store.Get(r, "auth0-session")
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
-	} else if session.Values["profile"] == nil {
-		w.Header().Set("Content-Type", "text/plain")
-		w.Write([]byte("Restricted contents!"))
-		return
-	} else {
-		queryValues := r.URL.Query()
-		if queryValues.Get("q") == "" {
-			w.Header().Set("Content-Type", "text/plain")
-			w.Write([]byte("Need search terms!"))
-			return
-		}
-		searchTerm := queryValues.Get("q")
-		stmt := "SELECT * FROM item_search WHERE item_search MATCH ? LIMIT 50"
-
-		data, err := gosqljson.QueryDbToMapJSON(db, "lower", stmt, searchTerm)
-		if err != nil {
-			log.Fatalln(err)
-		}
-		w.Header().Set("Content-Type", "application/json")
-		w.Write([]byte(data))
 	}
+
+	if _, ok := session.Values["profile"]; !ok {
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+	} else {
+		next(w, r)
+	}
+}
+
+func search(w http.ResponseWriter, r *http.Request) {
+	queryValues := r.URL.Query()
+	if queryValues.Get("q") == "" {
+		w.Header().Set("Content-Type", "text/plain")
+		w.Write([]byte("Need search terms!"))
+		return
+	}
+	searchTerm := queryValues.Get("q")
+	stmt := "SELECT * FROM item_search WHERE item_search MATCH ? LIMIT 5"
+
+	data, err := gosqljson.QueryDbToMapJSON(db, "lower", stmt, searchTerm)
+	if err != nil {
+		log.Fatalln(err)
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.Write([]byte(data))
 }
 
 func home(w http.ResponseWriter, r *http.Request) {
@@ -110,66 +130,39 @@ func home(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	} else {
-		serveFile("./public/goTunes.html", w)
+		serveFile(w, "./public/goTunes.html")
 	}
 }
 
 func getGDRToken(w http.ResponseWriter, r *http.Request) {
-
-	session, err := store.Get(r, "auth0-session")
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	} else if session.Values["profile"] == nil {
-		w.Header().Set("Content-Type", "text/plain")
-		w.Write([]byte("Restricted contents!"))
-		return
-	} else {
-		accessToken := getGDRAccessToken()
-		type Token struct {
-			AccessToken string
-			Expiration  time.Time
-		}
-		token := &Token{AccessToken: accessToken.AccessToken, Expiration: accessToken.Expiry}
-		b, err := json.Marshal(token)
-		if err != nil {
-			log.Fatalln(err)
-		}
-		w.Header().Set("Content-Type", "application/json")
-		fmt.Fprintf(w, "%s", string(b))
+	accessToken := getGDRAccessToken()
+	type Token struct {
+		AccessToken string
+		Expiration  time.Time
 	}
+	token := &Token{AccessToken: accessToken.AccessToken, Expiration: accessToken.Expiry}
+	b, err := json.Marshal(token)
+	if err != nil {
+		log.Fatalln(err)
+	}
+	w.Header().Set("Content-Type", "application/json")
+	fmt.Fprintf(w, "%s", string(b))
 }
 
 func getJS(w http.ResponseWriter, r *http.Request) {
-	getResource(w, r, "./public/goTunes.js")
+	serveFile(w, "./public/goTunes.js")
 }
 
 func getCSS(w http.ResponseWriter, r *http.Request) {
-	getResource(w, r, "./public/goTunes.css")
+	serveFile(w, "./public/goTunes.css")
 }
 
 func getEmptyAlbumArt(w http.ResponseWriter, r *http.Request) {
-	getResource(w, r, "./public/album-art-empty.png")
+	serveFile(w, "./public/album-art-empty.png")
 }
 
-func getResource(w http.ResponseWriter, r *http.Request, path string) {
-	session, err := store.Get(r, "auth0-session")
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	} else if session.Values["profile"] == nil {
-		w.Header().Set("Content-Type", "text/plain")
-		w.Write([]byte("Restricted contents!"))
-		return
-	} else {
-		serveFile(path, w)
-	}
-}
-
-func serveFile(path string, w http.ResponseWriter) {
-
+func serveFile(w http.ResponseWriter, path string) {
 	data, err := ioutil.ReadFile(path)
-
 	if err == nil {
 		var contentType string
 
@@ -282,7 +275,6 @@ func saveToken(path string, tok *oauth2.Token) {
 
 func getGDRAccessToken() *oauth2.Token {
 	var secrets = "./data/tokens.json"
-
 	if _, err := os.Stat(secrets); os.IsNotExist(err) {
 		log.Fatalln(err)
 	}

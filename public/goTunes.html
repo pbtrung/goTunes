@@ -45,7 +45,9 @@
                             <tr>
                                 <th rowspan="7" class="tb-album-art">
                                     {{#if this.albumart_id}}
-                                        <img id="album-art-{{this.fileid}}" class="album-art" src="" data-albumartid="{{this.albumart_id}}">
+                                        <img id="album-art-{{this.fileid}}" class="album-art" 
+                                        src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==" 
+                                        data-albumartid="{{this.albumart_id}}">
                                     {{else}}
                                         <img class="album-art" src="/album-art-empty">
                                     {{/if}}
