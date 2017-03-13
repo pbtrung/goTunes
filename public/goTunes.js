@@ -12,7 +12,7 @@ var timeFormat = function(secs) {
     return mins + ":" + secs;
 };
 
-var itemSearchUrl = "https://trungpham.cloudant.com/music/_design/item_search/_search/items?&q=";
+var itemSearchUrl = "https://trungpham.cloudant.com/music/_design/item_search/_search/items?q=";
 var username = "waskothatedgelefattilled";
 var password = "44fdf9671744a563b60bfe6b9833a37d75e2933c";
 
