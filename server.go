@@ -1,7 +1,6 @@
 package main
 
 import (
-	"database/sql"
 	"encoding/gob"
 	"encoding/json"
 	"fmt"
@@ -20,25 +19,16 @@ import (
 	"golang.org/x/oauth2/google"
 
 	"github.com/codegangsta/negroni"
-	"github.com/elgs/gosqljson"
 	"github.com/gorilla/context"
 	"github.com/gorilla/mux"
 	"github.com/gorilla/securecookie"
 	"github.com/gorilla/sessions"
 	"github.com/joho/godotenv"
-	_ "github.com/mattn/go-sqlite3"
 )
 
 var store = sessions.NewCookieStore(securecookie.GenerateRandomKey(32))
-var db *sql.DB
 
 func main() {
-	var err error
-	db, err = sql.Open("sqlite3", "./data/lib.db")
-	if err != nil {
-		log.Fatalln(err)
-	}
-
 	r := mux.NewRouter()
 
 	r.HandleFunc("/", home)
@@ -55,10 +45,6 @@ func main() {
 	r.Handle("/gdrToken", negroni.New(
 		negroni.HandlerFunc(isAuthenticated),
 		negroni.Wrap(http.HandlerFunc(getGDRToken)),
-	))
-	r.Handle("/search", negroni.New(
-		negroni.HandlerFunc(isAuthenticated),
-		negroni.Wrap(http.HandlerFunc(search)),
 	))
 	r.Handle("/album-art-empty", negroni.New(
 		negroni.HandlerFunc(isAuthenticated),
@@ -86,24 +72,6 @@ func isAuthenticated(w http.ResponseWriter, r *http.Request, next http.HandlerFu
 	} else {
 		next(w, r)
 	}
-}
-
-func search(w http.ResponseWriter, r *http.Request) {
-	queryValues := r.URL.Query()
-	if queryValues.Get("q") == "" {
-		w.Header().Set("Content-Type", "text/plain")
-		w.Write([]byte("Need search terms!"))
-		return
-	}
-	searchTerm := queryValues.Get("q")
-	stmt := "SELECT * FROM item_search WHERE item_search MATCH ? LIMIT 25"
-
-	data, err := gosqljson.QueryDbToMapJSON(db, "lower", stmt, searchTerm)
-	if err != nil {
-		log.Fatalln(err)
-	}
-	w.Header().Set("Content-Type", "application/json")
-	w.Write([]byte(data))
 }
 
 func home(w http.ResponseWriter, r *http.Request) {

@@ -12,6 +12,10 @@ var timeFormat = function(secs) {
     return mins + ":" + secs;
 };
 
+var itemSearchUrl = "https://trungpham.cloudant.com/music/_design/item_search/_search/items?&q=";
+var username = "waskothatedgelefattilled";
+var password = "44fdf9671744a563b60bfe6b9833a37d75e2933c";
+
 $(function() {
 
     // Model
@@ -26,21 +30,26 @@ $(function() {
             "search/:query": "itemQuery"
         },
         itemQuery: function(query) {
-            var queryUrl = "/search?q=" + encodeURIComponent($("#query").val());
+            var queryUrl = itemSearchUrl + encodeURIComponent($("#query").val());
             $.ajax({
                 type: "GET",
                 url: queryUrl,
                 dataType: "json",
+                headers: {
+                    Authorization: "Basic " + btoa(username + ":" + password)
+                },
                 success: function(data) {
-                    for (var i = 0; i < data.length; i++) {
-                        data[i]["length"] = timeFormat(data[i]["length"]);
-                        data[i]["bitrate"] = Math.round(data[i]["bitrate"] / 1000);
-                    }   
-                    var models = _.map(data, function(d) {
+                    var items = [];
+                    for (var i = 0; i < data["rows"].length; i++) {
+                        items.push(data["rows"][i]["fields"]);
+                        items[i]["length"] = timeFormat(items[i]["length"]);
+                        items[i]["bitrate"] = Math.round(items[i]["bitrate"] / 1000);
+                    }  
+                    var models = _.map(items, function(d) {
                         return new Item(d);
                     });
                     var results = new Items(models);
-                    app.showResults(results, query);
+                    app.showResults(results);
                 }
             });
         }
@@ -94,7 +103,7 @@ $(function() {
             ev.preventDefault();
             router.navigate("search/" + encodeURIComponent($("#query").val()), { trigger: true });
         },
-        showResults: function(results, query) {
+        showResults: function(results) {
             var source = $("#template").html();
             var template = Handlebars.compile(source);
             var html;
