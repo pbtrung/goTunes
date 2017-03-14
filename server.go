@@ -33,6 +33,7 @@ func main() {
 
 	r.HandleFunc("/", home)
 	r.HandleFunc("/callback", callbackHandler)
+	r.HandleFunc("/logo", getLogo)
 
 	r.Handle("/js", negroni.New(
 		negroni.HandlerFunc(isAuthenticated),
@@ -139,6 +140,10 @@ func getJS(w http.ResponseWriter, r *http.Request) {
 	serveFile(w, "./public/goTunes.js")
 }
 
+func getLogo(w http.ResponseWriter, r *http.Request) {
+	serveFile(w, "./public/goTunes.png")
+}
+
 func getCSS(w http.ResponseWriter, r *http.Request) {
 	serveFile(w, "./public/goTunes.css")
 }
@@ -160,6 +165,8 @@ func serveFile(w http.ResponseWriter, path string) {
 			contentType = "application/javascript"
 		} else if strings.HasSuffix(path, ".png") {
 			contentType = "image/png"
+		} else if strings.HasSuffix(path, ".jpg") {
+			contentType = "image/jpg"
 		} else {
 			contentType = "text/plain"
 		}
