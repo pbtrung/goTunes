@@ -29,6 +29,7 @@ var store = sessions.NewCookieStore(securecookie.GenerateRandomKey(32), secureco
 
 func main() {
 	r := mux.NewRouter()
+	store.MaxAge(86400 * 5)
 
 	r.HandleFunc("/", home)
 	r.HandleFunc("/callback", callbackHandler)
