@@ -4,7 +4,6 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" />
-    <link rel="stylesheet" href="/lock-css" />
     <script type="text/javascript" src="https://cdn.auth0.com/js/lock/10.12.3/lock.min.js"></script>
     <title>goTunes</title>
   </head>
@@ -30,6 +29,8 @@
       var lock = new Auth0Lock("{{.AUTH0_CLIENT_ID}}", "{{.AUTH0_DOMAIN}}", options);
 
       lock.show();
+
+      $(".auth0-lock-header-logo").css({ "height": "65px", "margin-bottom": "5px" });
     </script>
   </body>
 </html>
