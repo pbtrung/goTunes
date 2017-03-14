@@ -34,6 +34,7 @@ func main() {
 	r.HandleFunc("/", home)
 	r.HandleFunc("/callback", callbackHandler)
 	r.HandleFunc("/logo", getLogo)
+	r.HandleFunc("/lock-css", getLockCSS)
 
 	r.Handle("/js", negroni.New(
 		negroni.HandlerFunc(isAuthenticated),
@@ -142,6 +143,10 @@ func getJS(w http.ResponseWriter, r *http.Request) {
 
 func getLogo(w http.ResponseWriter, r *http.Request) {
 	serveFile(w, "./public/goTunes.png")
+}
+
+func getLockCSS(w http.ResponseWriter, r *http.Request) {
+	serveFile(w, "./public/lock.css")
 }
 
 func getCSS(w http.ResponseWriter, r *http.Request) {
