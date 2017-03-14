@@ -18,11 +18,11 @@
 <body>
     <div class="container" align="center">
         <audio controls id="player"></audio>
-        <div id="content">
+        <div id="content" align="left">
             <form id="queryForm">
                 <input id="query" type="search" placeholder="Search" class="form-control search">
             </form>
-            <ul id="results" class="list list-group" align="left"></ul>
+            <ul id="results" class="list list-group"></ul>
             <div class="text-center">
                 <ul class="pagination pagination-sm"></ul>
             </div>
@@ -38,7 +38,7 @@
                 <span class="badge"><a href="#" id="pause">Pause</a></span>
                 <span class="badge"><a href="#" id="info" data-fileid="{{this.fileid}}">Info</a></span>
                 {{#if this.lyrics}}
-                    <span class="badge"><a href="#" id="lyrics" data-fileid="{{this.fileid}}">Lyrics</a></span>                        
+                    <span class="badge"><a href="#" id="lyrics" data-fileid="{{this.fileid}}">Lyrics</a></span>
                 {{/if}}
                 <dl class="dl-horizontal hidden" id="dl-{{this.fileid}}">
                     <table>
@@ -46,13 +46,13 @@
                             <tr>
                                 <th rowspan="7" class="tb-album-art">
                                     {{#if this.albumart_id}}
-                                        <img id="album-art-{{this.fileid}}" class="album-art" 
-                                        src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==" 
+                                        <img id="album-art-{{this.fileid}}" class="album-art"
+                                        src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="
                                         data-albumartid="{{this.albumart_id}}">
                                     {{else}}
                                         <img class="album-art" src="/album-art-empty">
                                     {{/if}}
-                                </th>   
+                                </th>
                                 <th></th>
                                 <th></th>
                             </tr>
@@ -111,7 +111,7 @@
                 </dl>
             </p>
             {{#if this.lyrics}}
-                <p id="lyrics-{{this.fileid}}" class="lyrics hidden">{{this.lyrics}}</p>                                 
+                <p id="lyrics-{{this.fileid}}" class="lyrics hidden">{{this.lyrics}}</p>
             {{/if}}
         </li>
     </script>
