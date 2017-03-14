@@ -12,9 +12,7 @@ var timeFormat = function(secs) {
     return mins + ":" + secs;
 };
 
-var itemSearchUrl = "https://trungpham.cloudant.com/music/_design/item_search/_search/items?q=";
-var username = "waskothatedgelefattilled";
-var password = "44fdf9671744a563b60bfe6b9833a37d75e2933c";
+var itemSearchUrl = "https://trungpham.cloudant.com/music/_design/item_search/_search/items?limit=50&q=";
 
 $(function() {
 
@@ -31,12 +29,29 @@ $(function() {
         },
         itemQuery: function(query) {
             var queryUrl = itemSearchUrl + encodeURIComponent($("#query").val());
+            if(localStorage.getItem("cloudantAuth") === null) {
+                $.ajax({
+                    type: "GET",
+                    url: "/cloudantAuth",
+                    dataType: "json",
+                    success: function(auth) {
+                        localStorage.setItem("cloudantAuth", JSON.stringify(auth));
+                        router.queryCloudant(queryUrl, auth);
+                    }
+                });
+            } else {
+                var auth = JSON.parse(localStorage.getItem("cloudantAuth"));
+                router.queryCloudant(queryUrl, auth);
+            }   
+        },
+
+        queryCloudant: function(queryUrl, auth) {
             $.ajax({
                 type: "GET",
                 url: queryUrl,
                 dataType: "json",
                 headers: {
-                    Authorization: "Basic " + btoa(username + ":" + password)
+                    Authorization: "Basic " + btoa(auth.User + ":" + auth.Password)
                 },
                 success: function(data) {
                     var items = [];

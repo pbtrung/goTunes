@@ -19,14 +19,13 @@ import (
 	"golang.org/x/oauth2/google"
 
 	"github.com/codegangsta/negroni"
-	"github.com/gorilla/context"
 	"github.com/gorilla/mux"
 	"github.com/gorilla/securecookie"
 	"github.com/gorilla/sessions"
 	"github.com/joho/godotenv"
 )
 
-var store = sessions.NewCookieStore(securecookie.GenerateRandomKey(32))
+var store = sessions.NewCookieStore(securecookie.GenerateRandomKey(32), securecookie.GenerateRandomKey(32))
 
 func main() {
 	r := mux.NewRouter()
@@ -50,6 +49,10 @@ func main() {
 		negroni.HandlerFunc(isAuthenticated),
 		negroni.Wrap(http.HandlerFunc(getEmptyAlbumArt)),
 	))
+	r.Handle("/cloudantAuth", negroni.New(
+		negroni.HandlerFunc(isAuthenticated),
+		negroni.Wrap(http.HandlerFunc(getCloudantAuth)),
+	))
 
 	var port string
 	if os.Getenv("PORT") == "" {
@@ -57,7 +60,7 @@ func main() {
 	} else {
 		port = os.Getenv("PORT")
 	}
-	log.Fatalln(http.ListenAndServe(":"+port, context.ClearHandler(r)))
+	log.Fatalln(http.ListenAndServe(":"+port, r))
 }
 
 func isAuthenticated(w http.ResponseWriter, r *http.Request, next http.HandlerFunc) {
@@ -110,6 +113,20 @@ func getGDRToken(w http.ResponseWriter, r *http.Request) {
 	}
 	token := &Token{AccessToken: accessToken.AccessToken, Expiration: accessToken.Expiry}
 	b, err := json.Marshal(token)
+	if err != nil {
+		log.Fatalln(err)
+	}
+	w.Header().Set("Content-Type", "application/json")
+	fmt.Fprintf(w, "%s", string(b))
+}
+
+func getCloudantAuth(w http.ResponseWriter, r *http.Request) {
+	type CloudantAuth struct {
+		User     string
+		Password string
+	}
+	auth := &CloudantAuth{User: os.Getenv("CLOUDANT_USER"), Password: os.Getenv("CLOUDANT_PASSWORD")}
+	b, err := json.Marshal(auth)
 	if err != nil {
 		log.Fatalln(err)
 	}
