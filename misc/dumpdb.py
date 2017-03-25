@@ -15,19 +15,31 @@ connection.row_factory = dict_factory
 
 cursor = connection.cursor()
 
-#cursor.execute("select * from items where id <= 40000")
-#cursor.execute("select * from items where id > 40000 and id <= 80000")
-#cursor.execute("select * from items where id > 80000 and id <= 120000")
-cursor.execute("select * from items where id > 120000")
+cursor.execute("select COUNT(*) as total_rows from items")
+total_rows = cursor.fetchall()[0]["total_rows"]
 
-results = cursor.fetchall()
+num = 1
+inc = 30000
+upper_row = -1
+lower_row = -1
+while upper_row < total_rows:
+    lower_row = upper_row
+    upper_row += inc
 
-for r in results:
-    r["path"] = r["path"].decode("utf-8")
+    if upper_row > total_rows:
+        upper_row = total_rows
 
-with codecs.open("items.json", "w", encoding="utf-8") as f:
-    f.write('{"docs":')
-    f.write(json.dumps(results, sort_keys = True, ensure_ascii=False))
-    f.write("}")
+    params = (lower_row, upper_row)
+    print("lower: " + str(lower_row) + ", upper: " + str(upper_row))
+    cursor.execute("select * from items where id > ? and id <= ?", params)
+    results = cursor.fetchall()
+
+    with codecs.open("items" + str(num) + ".json", "w", encoding="utf-8") as f:
+        f.write('{"docs":')
+        f.write(json.dumps(results, sort_keys=True, ensure_ascii=False))
+        f.write("}")
+
+    num += 1
+
 
 connection.close()
