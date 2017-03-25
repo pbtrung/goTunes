@@ -1,0 +1,42 @@
+function(doc) {
+    index("default", doc.title);
+    if (doc.album) {
+        index("album", doc.album, {"store": true});
+    }
+    if (doc.albumartist) {
+        index("albumartist", doc.albumartist, {"store": true});
+    }
+    if (doc.id) {
+        index("id", doc.id, {"store": true});
+    }
+    if (doc.title) {
+        index("title", doc.title, {"store": true});
+    }
+    if (doc.fileid) {
+        index("fileid", doc.fileid, {"store": true});
+    }
+    if (doc.track) {
+        index("track", doc.track, {"store": true});
+    }
+    if (doc.tracktotal) {
+        index("tracktotal", doc.tracktotal, {"store": true});
+    }
+    if (doc.format) {
+        index("format", doc.format, {"store": true});
+    }
+    if (doc.length) {
+        index("length", doc.length, {"store": true});
+    }
+    if (doc.bitrate) {
+        index("bitrate", doc.bitrate, {"store": true});
+    }
+    if (doc.mb_trackid) {
+        index("mb_trackid", doc.mb_trackid, {"store": true});
+    }
+    if (doc.lyrics) {
+        index("lyrics", doc.lyrics, {"store": true});
+    }
+    if (doc.albumart_id) {
+        index("albumart_id", doc.albumart_id, {"store": true});
+    }
+}
